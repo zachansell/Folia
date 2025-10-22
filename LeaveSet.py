@@ -58,8 +58,11 @@ class LeaveSet:
     def values_list(self):
         return list(self.values.values())
 
-    def normalize_leave(leave: str) -> str:
-        return ''.join(sorted(leave)).upper()
+    def normalize_leave(self, leave: str) -> str:
+        leave = leave.upper()
+        blanks = '?' * leave.count('?')
+        other_chars = ''.join(sorted(c for c in leave if c != '?'))
+        return blanks + other_chars
 
 
 def main() -> None:
