@@ -1,0 +1,6 @@
+# Folia - Scrabble Leave Value Study Tool
+# tkinter (included with Python)
+# json (included with Python)
+# csv (included with Python)
+# We will need Python 3.6 or greater 
+
