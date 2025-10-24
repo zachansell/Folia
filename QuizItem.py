@@ -10,7 +10,7 @@ class QuizItem:
         self.guess: float = 0.0
         self.delta: float = 0.0
         self.rating: str = ""
-        self.time_elapsed: int = 0  # in milliseconds
+        self.time_elapsed: int = 0  # in seconds
 
     def set_guess(self, guess: float) -> None:
         self.guess = float(guess)
