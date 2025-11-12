@@ -64,6 +64,24 @@ class LeaveSet:
         other_chars = ''.join(sorted(c for c in leave if c != '?'))
         return blanks + other_chars
 
+    def genQuizItems(self, settings: Dict[str, float]) -> List[QuizItem]:
+        # Settings dictionary meanings (may not be all used):
+        # num_questions: Number of questions in the quiz
+        # min_len: Minimum length of the leave to be considered
+        # max_len: Maximum length of the leave to be considered
+        # max_vowels: Maximum number of vowels in the leave
+        # min_vowels: Minimum number of vowels in the leave
+        # max_consonants: Maximum number of consonants in the leave
+        # min_consonants: Minimum number of consonants in the leave
+        # must_contain: letters that must be in the leave
+        # must_not_contain: letters that must not be in the leave
+        # NOTE: for the containment settings, the input will be interpreted as a sequence of two-digit numbers 0-26 representing ? and A-Z
+        # min_value: Minimum value of the leave
+        # max_value: Maximum value of the leave
+        # time_limit: Time limit for quiz in seconds
+        quizItems = []
+        return quizItems
+
 
 def main() -> None:
     ls = LeaveSet()
