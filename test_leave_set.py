@@ -103,9 +103,9 @@ def test_genQuizItems_must_contain_and_not_contain():
     if sample_key is None:
         pytest.skip("No suitable keys to test")
     ch = sample_key.replace('?', '')[0]
-    items = ls.genQuizItems({'num_questions': 0, 'must_contain': ch, 'must_not_contain': 'Z'})
+    items = ls.genQuizItems({'num_questions': 10, 'must_contain': ch, 'must_not_contain': 'Z'})
     for it in items:
-        assert ch in it.leave
+        assert ch in it.leave and 'Z' not in it.leave
 
 
 def test_genQuizItems_value_range():
@@ -114,9 +114,10 @@ def test_genQuizItems_value_range():
     if not vals:
         pytest.skip("No values in LeaveSet")
     min_v = min(vals)
-    items = ls.genQuizItems({'num_questions': 0, 'min_value': min_v, 'max_value': min_v})
+    max_v = max(vals)
+    items = ls.genQuizItems({'num_questions': 10, 'min_value': min_v, 'max_value': max_v})
     for it in items:
-        assert it.value == min_v
+        assert it.value >= min_v and it.value <= max_v
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
