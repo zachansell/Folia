@@ -9,7 +9,6 @@ class Quiz:
         self.current_index = 0
         self.start_time = time.time()
         self.finished = False
-        #todo: add settings
     
     @property
     def current_question(self) -> Optional[QuizItem]:
