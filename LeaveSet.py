@@ -27,6 +27,8 @@ class LeaveSet:
                 raw_val = row[1].strip()
                 if i == 0 and key.lower() in ("leave", "leaves", "name") and raw_val.lower() in ("value", "values", "val"):
                     continue
+                if not key or not all(c.isalpha() or c == '?' for c in key):
+                    continue
                 val: Any = raw_val
                 if raw_val != "":
                     try:
@@ -35,10 +37,11 @@ class LeaveSet:
                         try:
                             val = float(raw_val)
                         except ValueError:
-                            val = raw_val
+                            continue
                 else:
                     val = None
-                values[key] = round(val,dec_places)
+                if val is not None:
+                    values[key] = round(val,dec_places)
         self.values = values
         self.csv_path = path
 
