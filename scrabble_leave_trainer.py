@@ -6,6 +6,8 @@ import random
 import json
 import os
 from LeaveSet import LeaveSet
+from Quiz import Quiz
+from QuizItem import QuizItem
 
 class SimpleLeaveTrainer:
     def __init__(self, root):
@@ -14,9 +16,7 @@ class SimpleLeaveTrainer:
         self.root.geometry("600x500")
         
         self.leaves = LeaveSet()
-        self.quiz_active = False
-        self.current_leave = None
-        self.current_value = None
+        self.quiz = None
         self.score = 0
         self.total = 0
         
@@ -80,50 +80,76 @@ class SimpleLeaveTrainer:
         tk.Label(self.root, text=stats_text, font=("Arial", 9)).pack(side=tk.BOTTOM, pady=10)
     
     def start_quiz(self):
-        self.quiz_active = True
+        all_leaves = list(self.leaves.items())
+        selected_leaves = random.sample(all_leaves, min(10, len(all_leaves)))
+        
+        self.quiz = Quiz(selected_leaves)
         self.score = 0
         self.total = 0
+        
         self.next_question()
         self.quiz_label.config(text="Guess the value:")
         self.stats['quizzes'] = self.stats.get('quizzes', 0) + 1
         
     def next_question(self):
-        all_leaves = list(self.leaves.items())
-        leave, value = random.choice(all_leaves)
-        self.current_leave = leave
-        self.current_value = value
-        self.leave_label.config(text=leave)
-        self.guess_entry.delete(0, tk.END)
+        if self.quiz is None:
+            return
+            
+        current = self.quiz.current_question
+        if current:
+            self.leave_label.config(text=current.leave)
+            self.guess_entry.delete(0, tk.END)
+        else:
+            self.quiz_label.config(text="Quiz finished!")
+            self.show_results()
         
     def check_guess(self):
-        if not self.quiz_active:
+        if self.quiz is None:
             messagebox.showinfo("Info", "Start a quiz first!")
+            return
+            
+        current = self.quiz.current_question
+        if current is None:
+            messagebox.showinfo("Info", "Quiz is finished!")
             return
             
         try:
             guess = float(self.guess_entry.get())
-            diff = abs(guess - self.current_value)
+            self.quiz.make_guess(guess)
             
             self.total += 1
-            if diff < 3:
+            if current.rating in ("excellent", "great", "good"):
                 self.score += 1
-                result = "Good!"
+                result = f"Nice! ({current.rating.upper()})"
+            elif current.rating == "correct":
+                self.score += 1
+                result = "Perfect! (CORRECT)"
             else:
-                result = "Keep practicing"
+                result = "Keep practicing (POOR)"
                 
-            msg = f"{result}\nYour guess: {guess:.1f}\nActual: {self.current_value:.1f}"
+            msg = f"{result}\nYour guess: {guess:.1f}\nActual: {current.value:.1f}\nDiff: {current.delta:.1f}"
             self.quiz_label.config(text=msg)
             self.score_label.config(text=f"Score: {self.score}/{self.total}")
             
             self.stats['lifetime_total'] = self.stats.get('lifetime_total', 0) + 1
-            if diff < 3:
+            if current.rating in ("excellent", "great", "good", "correct"):
                 self.stats['lifetime_score'] = self.stats.get('lifetime_score', 0) + 1
             self.save_session()
             
-            self.root.after(2000, self.next_question)
+            self.root.after(2000, self.advance_quiz)
             
         except ValueError:
             messagebox.showerror("Error", "Enter a number.")
+    
+    def advance_quiz(self):
+        if self.quiz is None:
+            return
+        
+        if self.quiz.finished:
+            self.quiz_label.config(text="Quiz finished!")
+            self.show_results()
+        else:
+            self.next_question()
     
     def lookup_leave(self):
         leave = self.lookup_entry.get().upper()
@@ -134,6 +160,17 @@ class SimpleLeaveTrainer:
             self.result_label.config(text=f"{leave} = {value:.1f}")
         else:
             self.result_label.config(text="Not found")
+    
+    def show_results(self):
+        """Display final quiz results"""
+        if self.quiz is None:
+            return
+        
+        results_text = f"Quiz Complete!\n\nFinal Score: {self.score}/{self.total}"
+        percentage = (self.score / self.total * 100) if self.total > 0 else 0
+        results_text += f"\nAccuracy: {percentage:.1f}%"
+        
+        messagebox.showinfo("Quiz Results", results_text)
     
     def load_session(self):
         if os.path.exists(self.session_file):
