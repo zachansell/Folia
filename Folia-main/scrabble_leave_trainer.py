@@ -90,12 +90,14 @@ class SimpleLeaveTrainer:
         btn_container = tk.Frame(left, bg='white')
         btn_container.pack(pady=10)
         
-        self.submit_btn = ttk.Button(btn_container, text="Submit Answer", 
-                                command=self.check_guess)
+        self.submit_btn = tk.Button(btn_container, text="Submit Answer", 
+                                command=self.check_guess, bg='#2ecc71', fg='white', 
+                                font=('Helvetica', 11))
         self.submit_btn.pack(side=tk.LEFT, padx=5)
         
-        self.next_btn = ttk.Button(btn_container, text="Next Question", 
-                                    command=self.advance_quiz, state='disabled')
+        self.next_btn = tk.Button(btn_container, text="Next Question", 
+                                    command=self.advance_quiz, state='disabled',
+                                    bg='#9b59b6', fg='white', font=('Helvetica', 11))
         self.next_btn.pack(side=tk.LEFT, padx=5)
         
         self.score_label = tk.Label(left, text="Questions: 0/0 | Accurate: 0", 
@@ -335,8 +337,8 @@ class SimpleLeaveTrainer:
             self.total = 0
             
             # Reset button states
-            self.submit_btn.config(state='normal')
-            self.next_btn.config(state='disabled')
+            self.submit_btn.config(state='normal', bg='#2ecc71')
+            self.next_btn.config(state='disabled', bg='#bdc3c7')
             self.guess_entry.config(state='normal')
             
             self.next_question()
@@ -357,8 +359,13 @@ class SimpleLeaveTrainer:
             self.leave_label.config(text=current.leave)
             self.guess_entry.delete(0, tk.END)
             self.guess_entry.config(state='normal')
-            self.submit_btn.config(state='normal')
-            self.next_btn.config(state='disabled')
+            self.guess_entry.focus_set()  # Focus back to entry
+            
+            self.submit_btn.config(state='normal', bg='#2ecc71') # Reset color
+            self.next_btn.config(state='disabled', bg='#bdc3c7') # Grey out
+            
+            # Rebind Enter to submit
+            self.guess_entry.bind('<Return>', lambda e: self.check_guess())
         else:
             self.quiz_label.config(text="Quiz finished!")
             self.show_results()
@@ -391,9 +398,13 @@ class SimpleLeaveTrainer:
             self.quiz_label.config(text=msg)
             
             # Disable submit, enable next, disable entry
-            self.submit_btn.config(state='disabled')
-            self.next_btn.config(state='normal')
+            self.submit_btn.config(state='disabled', bg='#bdc3c7')
+            self.next_btn.config(state='normal', bg='#9b59b6')
             self.guess_entry.config(state='disabled')
+            
+            # Bind Enter to Next Question
+            self.root.bind('<Return>', lambda e: self.advance_quiz())
+            self.next_btn.focus_set() # Move focus to next button
             
             # Update score display
             self.score_label.config(text=f"Questions: {self.total}/{len(self.quiz.questions)} | Accurate: {self.score}")
@@ -463,6 +474,9 @@ class SimpleLeaveTrainer:
             self.start_quiz()
     
     def advance_quiz(self):
+        # Unbind Enter from root to prevent accidental triggers
+        self.root.unbind('<Return>')
+        
         if self.quiz is None:
             return
         
