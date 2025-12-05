@@ -1,0 +1,10 @@
+# Folia - Scrabble Leave Value Study Tool
+# tkinter (included with Python)
+# json (included with Python)
+# csv (included with Python)
+# We will need Python 3.6 or greater 
+
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+coverage>=7.0.0
