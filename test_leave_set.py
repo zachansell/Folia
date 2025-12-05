@@ -89,7 +89,7 @@ def test_genQuizItems_min_len_filters_to_none():
     ls = LeaveSet()
     max_len = 0
     for k in ls.keys():
-        l = len([c for c in k if c != '?'])
+        l = len(k)
         if l > max_len:
             max_len = l
     items = ls.genQuizItems({'num_questions': 1, 'min_len': max_len + 1})
@@ -98,11 +98,7 @@ def test_genQuizItems_min_len_filters_to_none():
 
 def test_genQuizItems_must_contain_and_not_contain():
     ls = LeaveSet()
-    keys = list(ls.keys())
-    sample_key = next((k for k in keys if k != '?'), None)
-    if sample_key is None:
-        pytest.skip("No suitable keys to test")
-    ch = sample_key.replace('?', '')[0]
+    
     items = ls.genQuizItems({'num_questions': 10, 'must_contain': ch, 'must_not_contain': 'Z'})
     for it in items:
         assert ch in it.leave and 'Z' not in it.leave
