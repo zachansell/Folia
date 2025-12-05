@@ -29,15 +29,17 @@ class SimpleLeaveTrainer:
         self.root.title("Folia: Scrabble Leave Trainer Demo")
         self.root.geometry("600x500")
         
-        self.leaves = LeaveSet()
+        self._leaves = LeaveSet()
+        self.leaves = self._leaves  # Add alias for compatibility
         self.quiz = None
+        self._quiz = None
         self.score = 0
         self.total = 0
         
         self.current_settings = self.DEFAULT_SETTINGS.copy()
         
-        self.session_file = "session.json"
-        self.load_session()
+        self._session_file = "session.json"
+        self._stats = {}
         
         # Load session and setup
         self._load_session()
@@ -63,6 +65,11 @@ class SimpleLeaveTrainer:
         tk.Label(left, text="Quiz Mode", font=("Helvetica", 12, "bold"), 
                 bg='white', fg='black').pack(pady=(15, 10))
         
+        # Start Quiz button - prominently at the top
+        tk.Button(left, text="Start Quiz", 
+                 command=self.show_quiz_settings, font=('Helvetica', 12, 'bold'),
+                 bg='#3498db', fg='white', width=20, height=2).pack(pady=15)
+        
         self.quiz_label = tk.Label(left, text="Click 'Start Quiz' to begin", 
                                    font=("Helvetica", 10), bg='white', fg='#4a5568')
         self.quiz_label.pack(pady=5)
@@ -81,14 +88,17 @@ class SimpleLeaveTrainer:
         self.guess_entry.bind('<Return>', lambda e: self.check_guess())
         
         btn_container = tk.Frame(left, bg='white')
-        btn_container.pack(pady=15)
+        btn_container.pack(pady=10)
         
-        submit_btn = ttk.Button(btn_container, text="Submit Answer", 
-                                command=self.check_guess)
-        submit_btn.pack(side=tk.LEFT, padx=5)
+        self.submit_btn = tk.Button(btn_container, text="Submit Answer", 
+                                command=self.check_guess, bg='#2ecc71', fg='white', 
+                                font=('Helvetica', 11))
+        self.submit_btn.pack(side=tk.LEFT, padx=5)
         
-        tk.Button(quiz_frame, text="Start Quiz", 
-                 command=self.show_quiz_settings).pack(pady=5)
+        self.next_btn = tk.Button(btn_container, text="Next Question", 
+                                    command=self.advance_quiz, state='disabled',
+                                    bg='#9b59b6', fg='white', font=('Helvetica', 11))
+        self.next_btn.pack(side=tk.LEFT, padx=5)
         
         self.score_label = tk.Label(left, text="Questions: 0/0 | Accurate: 0", 
                                     font=("Helvetica", 9), bg='white', fg='#718096')
@@ -131,23 +141,14 @@ class SimpleLeaveTrainer:
         self._update_stats_display()
     
     def start_quiz(self, num_questions=10):
-        """Start a new quiz"""
-        questions = self._generate_questions(num_questions)
-        self._quiz = Quiz(questions)
-        self._stats['quizzes'] = self._stats.get('quizzes', 0) + 1
-        self._save_session()
-        self._show_question()
-    
-    def _generate_questions(self, count):
-        """Generate quiz questions from the leave database"""
-        all_leaves = list(self._leaves.items())
-        return random.sample(all_leaves, min(count, len(all_leaves)))
+        """Start a new quiz - this redirects to settings dialog"""
+        self.show_quiz_settings()
     
     def show_quiz_settings(self):
         """Open a configuration dialog for quiz settings"""
         settings_window = tk.Toplevel(self.root)
         settings_window.title("Quiz Configuration")
-        settings_window.geometry("480x650")
+        settings_window.geometry("500x700")
         
         canvas_frame = tk.Frame(settings_window)
         canvas_frame.pack(fill=tk.BOTH, expand=True)
@@ -268,8 +269,12 @@ class SimpleLeaveTrainer:
         must_not_contain_entry.pack(pady=2, anchor=tk.W, padx=10)
         tk.Label(main_frame, text="(e.g., 'Z')", font=("Arial", 7), fg="gray").pack(anchor=tk.W, padx=10)
         
-        button_frame = tk.Frame(main_frame)
-        button_frame.pack(fill=tk.X, pady=15, anchor=tk.W, padx=10)
+        # Separator
+        tk.Frame(main_frame, height=2, bg='#e0e0e0').pack(fill=tk.X, pady=20, padx=10)
+        
+        # Ready to start label
+        tk.Label(main_frame, text="Ready? Click below to start your quiz!", 
+                font=("Arial", 10, "bold")).pack(pady=(5, 10), padx=10)
         
         def start_with_settings():
             """Start quiz with the selected settings"""
@@ -290,10 +295,15 @@ class SimpleLeaveTrainer:
             settings_window.destroy()
             self.start_quiz_with_settings(settings)
         
-        tk.Button(button_frame, text="Generate Quiz", command=start_with_settings, 
-                 bg="#3498db", fg="white", width=20).pack(side=tk.LEFT, padx=5)
-        tk.Button(button_frame, text="Cancel", command=settings_window.destroy, 
-                 width=10).pack(side=tk.LEFT, padx=5)
+        button_frame = tk.Frame(main_frame, bg='white')
+        button_frame.pack(pady=(5, 30))
+        
+        # Use ttk.Button for better cross-platform styling
+        start_btn = ttk.Button(button_frame, text="Generate Quiz", command=start_with_settings)
+        start_btn.pack(side=tk.LEFT, padx=10, ipadx=30, ipady=12)
+        
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=settings_window.destroy)
+        cancel_btn.pack(side=tk.LEFT, padx=10, ipadx=20, ipady=12)
     
     def start_quiz_with_settings(self, settings):
         """Start a quiz using the provided settings"""
@@ -322,12 +332,19 @@ class SimpleLeaveTrainer:
             }
             
             self.quiz = Quiz([(qi.leave, qi.value) for qi in quiz_items])
+            self._quiz = self.quiz  # Keep both references for compatibility
             self.score = 0
             self.total = 0
             
+            # Reset button states
+            self.submit_btn.config(state='normal', bg='#2ecc71')
+            self.next_btn.config(state='disabled', bg='#bdc3c7')
+            self.guess_entry.config(state='normal')
+            
             self.next_question()
             self.quiz_label.config(text=f"Guess the value: ({len(quiz_items)} questions)")
-            self.stats['quizzes'] = self.stats.get('quizzes', 0) + 1
+            self._stats['quizzes'] = self._stats.get('quizzes', 0) + 1
+            self._save_session()
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to generate quiz:\n{str(e)}")
@@ -341,6 +358,14 @@ class SimpleLeaveTrainer:
         if current:
             self.leave_label.config(text=current.leave)
             self.guess_entry.delete(0, tk.END)
+            self.guess_entry.config(state='normal')
+            self.guess_entry.focus_set()  # Focus back to entry
+            
+            self.submit_btn.config(state='normal', bg='#2ecc71') # Reset color
+            self.next_btn.config(state='disabled', bg='#bdc3c7') # Grey out
+            
+            # Rebind Enter to submit
+            self.guess_entry.bind('<Return>', lambda e: self.check_guess())
         else:
             self.quiz_label.config(text="Quiz finished!")
             self.show_results()
@@ -372,12 +397,22 @@ class SimpleLeaveTrainer:
             msg = f"{result}\nYour guess: {guess:.1f}\nActual: {current.value:.1f}\nDiff: {current.delta:.1f}"
             self.quiz_label.config(text=msg)
             
-            self.stats['lifetime_total'] = self.stats.get('lifetime_total', 0) + 1
-            if current.rating in ("excellent", "great", "good", "correct"):
-                self.stats['lifetime_score'] = self.stats.get('lifetime_score', 0) + 1
-            self.save_session()
+            # Disable submit, enable next, disable entry
+            self.submit_btn.config(state='disabled', bg='#bdc3c7')
+            self.next_btn.config(state='normal', bg='#9b59b6')
+            self.guess_entry.config(state='disabled')
             
-            self.root.after(2000, self.advance_quiz)
+            # Bind Enter to Next Question
+            self.root.bind('<Return>', lambda e: self.advance_quiz())
+            self.next_btn.focus_set() # Move focus to next button
+            
+            # Update score display
+            self.score_label.config(text=f"Questions: {self.total}/{len(self.quiz.questions)} | Accurate: {self.score}")
+            
+            self._stats['lifetime_total'] = self._stats.get('lifetime_total', 0) + 1
+            if current.rating in ("excellent", "great", "good", "correct"):
+                self._stats['lifetime_score'] = self._stats.get('lifetime_score', 0) + 1
+            self._save_session()
             
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter a numeric value.")
@@ -439,6 +474,9 @@ class SimpleLeaveTrainer:
             self.start_quiz()
     
     def advance_quiz(self):
+        # Unbind Enter from root to prevent accidental triggers
+        self.root.unbind('<Return>')
+        
         if self.quiz is None:
             return
         
@@ -477,19 +515,45 @@ class SimpleLeaveTrainer:
         percentage = (self.score / self.total * 100) if self.total > 0 else 0
         results_text += f"\nAccuracy: {percentage:.1f}%"
         
-        messagebox.showinfo("Quiz Results", results_text)
+        # Try to show detailed statistics if available
+        try:
+            stats = self.quiz.statistics()
+            results = self.quiz.results()
+            if stats and results:
+                results_text = "Quiz Complete!\n\n"
+                results_text += f"Performance Summary:\n"
+                results_text += f"  Accurate Guesses: {int(stats.get('accuracy', 0) * len(results))}/{len(results)}\n"
+                results_text += f"  Average Error: {stats.get('avg_delta', 0):.2f}\n"
+                results_text += f"  Best Guess: {stats.get('min_delta', 0):.2f} off\n"
+                results_text += f"  Worst Guess: {stats.get('max_delta', 0):.2f} off\n"
+        except:
+            pass  # Use simple results if detailed stats not available
+        
+        if messagebox.askyesno("Quiz Results", results_text + "\n\nStart another quiz?"):
+            self.start_quiz()
     
-    def load_session(self):
-        if os.path.exists(self.session_file):
+    def _load_session(self):
+        """Load session statistics from disk"""
+        default_stats = {
+            'sessions': 0,
+            'quizzes': 0,
+            'lifetime_score': 0,
+            'lifetime_total': 0,
+            'total_delta': 0,
+            'perfect_count': 0
+        }
+        
+        if os.path.exists(self._session_file):
             try:
                 with open(self._session_file, 'r') as f:
                     self._stats = json.load(f)
             except:
-                self._stats = default_stats
+                self._stats = default_stats.copy()
         else:
-            self._stats = default_stats
+            self._stats = default_stats.copy()
             
         self._stats['sessions'] = self._stats.get('sessions', 0) + 1
+        self._save_session()
         
     def _save_session(self):
         """Persist session data to disk"""

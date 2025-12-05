@@ -9,6 +9,7 @@ class Quiz:
         self.current_index = 0
         self.start_time = time.time()
         self.finished = False
+        self.total_time = 0
     
     @property
     def current_question(self) -> Optional[QuizItem]:
@@ -43,13 +44,16 @@ class Quiz:
         if not self.questions:
             return {}
         
-        deltas = [q.delta for q in self.questions if q.guess > 0]
+        # Include all questions that have been answered (guess has been set)
+        answered = [q for q in self.questions if q.guess != 0 or q.delta != 0]
+        deltas = [q.delta for q in answered]
+        
         if not deltas:
             return {}
         
-        correct = sum(1 for q in self.questions if q.rating == 'correct')
-        excellent = sum(1 for q in self.questions if q.rating in ['correct', 'excellent'])
-        accurate = sum(1 for q in self.questions if q.delta <= 3)
+        correct = sum(1 for q in answered if q.rating == 'correct')
+        excellent = sum(1 for q in answered if q.rating in ['correct', 'excellent'])
+        accurate = sum(1 for q in answered if q.delta <= 3)
         
         return {
             'avg_delta': sum(deltas) / len(deltas),
@@ -58,5 +62,5 @@ class Quiz:
             'total_time': self.total_time,
             'correct_count': correct,
             'excellent_count': excellent,
-            'accuracy': accurate / len(deltas)
+            'accuracy': accurate / len(deltas) if deltas else 0
         }
