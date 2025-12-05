@@ -139,14 +139,14 @@ class LeaveSet:
                 continue
 
             lname = str(leave).upper()
-            letters_only = [c for c in lname if c != '?']
-            length = len(letters_only)
+            length = len(lname)
 
             if min_len is not None and length < int(min_len):
                 continue
             if max_len is not None and length > int(max_len):
                 continue
 
+            letters_only = [c for c in lname if c != '?']
             vowel_count = sum(1 for c in letters_only if c in VOWELS)
             cons_count = sum(1 for c in letters_only if c.isalpha() and c not in VOWELS)
 
