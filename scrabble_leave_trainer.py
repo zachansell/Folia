@@ -10,6 +10,20 @@ from Quiz import Quiz
 from QuizItem import QuizItem
 
 class SimpleLeaveTrainer:
+    DEFAULT_SETTINGS = {
+        'num_questions': 10,
+        'min_len': 1,
+        'max_len': 7,
+        'min_vowels': 0,
+        'max_vowels': 5,
+        'min_consonants': 0,
+        'max_consonants': 7,
+        'min_value': -50.0,
+        'max_value': 50.0,
+        'must_contain': '',
+        'must_not_contain': '',
+    }
+    
     def __init__(self, root):
         self.root = root
         self.root.title("Folia: Scrabble Leave Trainer Demo")
@@ -19,6 +33,8 @@ class SimpleLeaveTrainer:
         self.quiz = None
         self.score = 0
         self.total = 0
+        
+        self.current_settings = self.DEFAULT_SETTINGS.copy()
         
         self.session_file = "session.json"
         self.load_session()
@@ -113,7 +129,7 @@ class SimpleLeaveTrainer:
                 font=("Arial", 11, "bold")).pack(pady=8, anchor=tk.W, padx=10)
         
         tk.Label(main_frame, text="Number of Questions:", font=("Arial", 9)).pack(anchor=tk.W, padx=10)
-        num_questions_var = tk.IntVar(value=10)
+        num_questions_var = tk.IntVar(value=self.current_settings['num_questions'])
         num_q_inner = tk.Frame(main_frame)
         num_q_inner.pack(fill=tk.X, pady=3, padx=10)
         tk.Scale(num_q_inner, from_=1, to=50, orient=tk.HORIZONTAL, 
@@ -121,8 +137,8 @@ class SimpleLeaveTrainer:
         tk.Label(num_q_inner, textvariable=num_questions_var, width=3, font=("Arial", 9)).pack(side=tk.LEFT, padx=8)
         
         tk.Label(main_frame, text="Leave Length (letters):", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
-        min_len_var = tk.IntVar(value=1)
-        max_len_var = tk.IntVar(value=7)
+        min_len_var = tk.IntVar(value=self.current_settings['min_len'])
+        max_len_var = tk.IntVar(value=self.current_settings['max_len'])
         
         min_len_inner = tk.Frame(main_frame)
         min_len_inner.pack(fill=tk.X, pady=2, padx=10)
@@ -139,8 +155,8 @@ class SimpleLeaveTrainer:
         tk.Label(max_len_inner, textvariable=max_len_var, width=2, font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
         
         tk.Label(main_frame, text="Vowel Count:", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
-        min_vowels_var = tk.IntVar(value=0)
-        max_vowels_var = tk.IntVar(value=5)
+        min_vowels_var = tk.IntVar(value=self.current_settings['min_vowels'])
+        max_vowels_var = tk.IntVar(value=self.current_settings['max_vowels'])
         
         min_v_inner = tk.Frame(main_frame)
         min_v_inner.pack(fill=tk.X, pady=2, padx=10)
@@ -157,8 +173,8 @@ class SimpleLeaveTrainer:
         tk.Label(max_v_inner, textvariable=max_vowels_var, width=2, font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
         
         tk.Label(main_frame, text="Consonant Count:", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
-        min_consonants_var = tk.IntVar(value=0)
-        max_consonants_var = tk.IntVar(value=7)
+        min_consonants_var = tk.IntVar(value=self.current_settings['min_consonants'])
+        max_consonants_var = tk.IntVar(value=self.current_settings['max_consonants'])
         
         min_c_inner = tk.Frame(main_frame)
         min_c_inner.pack(fill=tk.X, pady=2, padx=10)
@@ -175,8 +191,8 @@ class SimpleLeaveTrainer:
         tk.Label(max_c_inner, textvariable=max_consonants_var, width=2, font=("Arial", 9)).pack(side=tk.LEFT, padx=5)
         
         tk.Label(main_frame, text="Leave Value Range:", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
-        min_value_var = tk.DoubleVar(value=-50.0)
-        max_value_var = tk.DoubleVar(value=50.0)
+        min_value_var = tk.DoubleVar(value=self.current_settings['min_value'])
+        max_value_var = tk.DoubleVar(value=self.current_settings['max_value'])
         
         min_val_inner = tk.Frame(main_frame)
         min_val_inner.pack(fill=tk.X, pady=2, padx=10)
@@ -194,11 +210,13 @@ class SimpleLeaveTrainer:
         
         tk.Label(main_frame, text="Must Contain Letters:", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
         must_contain_entry = tk.Entry(main_frame, width=30, font=("Arial", 9))
+        must_contain_entry.insert(0, self.current_settings['must_contain'])
         must_contain_entry.pack(pady=2, anchor=tk.W, padx=10)
         tk.Label(main_frame, text="(e.g., 'A' or 'QU')", font=("Arial", 7), fg="gray").pack(anchor=tk.W, padx=10)
         
         tk.Label(main_frame, text="Must NOT Contain:", font=("Arial", 9)).pack(anchor=tk.W, pady=(12, 3), padx=10)
         must_not_contain_entry = tk.Entry(main_frame, width=30, font=("Arial", 9))
+        must_not_contain_entry.insert(0, self.current_settings['must_not_contain'])
         must_not_contain_entry.pack(pady=2, anchor=tk.W, padx=10)
         tk.Label(main_frame, text="(e.g., 'Z')", font=("Arial", 7), fg="gray").pack(anchor=tk.W, padx=10)
         
@@ -239,6 +257,21 @@ class SimpleLeaveTrainer:
                     "No leaves match your filter criteria.\nTry adjusting the settings.")
                 self.show_quiz_settings()
                 return
+            
+            #save settings for next time
+            self.current_settings = {
+                'num_questions': settings['num_questions'],
+                'min_len': settings['min_len'],
+                'max_len': settings['max_len'],
+                'min_vowels': settings['min_vowels'] or 0,
+                'max_vowels': settings['max_vowels'] or 7,
+                'min_consonants': settings['min_consonants'] or 0,
+                'max_consonants': settings['max_consonants'] or 8,
+                'min_value': settings['min_value'],
+                'max_value': settings['max_value'],
+                'must_contain': settings['must_contain'] or '',
+                'must_not_contain': settings['must_not_contain'] or '',
+            }
             
             self.quiz = Quiz([(qi.leave, qi.value) for qi in quiz_items])
             self.score = 0
@@ -323,6 +356,7 @@ class SimpleLeaveTrainer:
             self.result_label.config(text="Not found")
     
     def show_results(self):
+        """Display final quiz results"""
         if self.quiz is None:
             return
         
